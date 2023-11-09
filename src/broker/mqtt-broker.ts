@@ -87,6 +87,7 @@ export class MqttBroker implements Broker {
 
     async send(channel: string, payload: Buffer, options: SendOptions, ctx?: SendContext) {
         const hash = this.hasher.hash(payload)
+        console.log(`mqtt-send---${Buffer.from(payload).toString()}`)
         this.logger.debug({hash, channel}, 'send %s', hash)
         const cancel = () => {
             this.sendCancel(channel, hash).catch((error) => {

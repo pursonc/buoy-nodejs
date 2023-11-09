@@ -56,6 +56,8 @@ export class MemoryBroker implements Broker {
     }
 
     async send(channel: string, payload: Buffer, options: SendOptions, ctx?: SendContext) {
+
+        console.log(`brocker-send---${Buffer.from(payload.buffer).toString()}`)
         let cancelled = false
         if (ctx) {
             ctx.cancel = () => {

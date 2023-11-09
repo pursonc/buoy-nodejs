@@ -99,14 +99,8 @@ class Connection {
         if (this.version === 2) {
             await this.ackSend(data)
         } else {
-            this.log
-                .debug(
-                    {size: data.byteLength},
-                    'send data'
-                )
-                    // this.socket.send(data)
-                    
-            this.socket.send(Buffer.from(data.buffer).toString())
+            this.log.debug({size: data.byteLength}, 'send data')
+            this.socket.send(data)
         }
     }
 
@@ -193,8 +187,7 @@ async function handleConnection(socket: WebSocket, request: http.IncomingMessage
     const log = logger.child({uuid, conn: connection.id})
     log.debug('new connection')
     unsubscribe = await broker.subscribe(uuid, async (data) => {
-        log.debug('delivering payload--')
-       console.log( `unsubstribe----${Buffer.from(data.buffer).toString()}`)
+        log.debug('delivering payload')
         try {
             await connection.send(data)
         } catch (error) {
@@ -222,9 +215,6 @@ async function handlePost(
     const uuid = getUUID(request)
     log = log.child({uuid})
     const data = await readBody(request)
-    //  readBody 之后带了一堆代码
-console.log(`after-readBody---${Buffer.from(data.buffer).toString()}`)
-
     if (data.byteLength === 0) {
         throw new HttpError('Unable to forward empty message', 400)
     }
@@ -245,11 +235,9 @@ console.log(`after-readBody---${Buffer.from(data.buffer).toString()}`)
         }
     }
     try {
-        console.log(`beforborker-send---${Buffer.from(data.buffer).toString()}`)
-        
         const delivery = await broker.send(uuid, data, {wait, requireDelivery}, ctx)
         response.setHeader('X-Buoy-Delivery', delivery)
-        log.info({delivery}, 'message dispatched--')
+        log.info({delivery}, 'message dispatched')
         if (wait > 0 && delivery == DeliveryState.buffered) {
             return 202
         }
@@ -265,19 +253,12 @@ console.log(`after-readBody---${Buffer.from(data.buffer).toString()}`)
 function readBody(request: http.IncomingMessage) {
     return new Promise<Buffer>((resolve, reject) => {
         const chunks: Buffer[] = []
-
         request.on('error', reject)
-        request.on('readable', function () {
-            console.log(`readable-----${request.read()}`)
-        })
         request.on('data', (chunk) => {
             chunks.push(chunk)
-  
-            console.log(`readbody-on-data---${Buffer.from(chunk).toString()}`)
         })
         request.on('end', () => {
             resolve(Buffer.concat(chunks))
-            console.log(`readbody-end---${Buffer.from(Buffer.concat(chunks)).toString()}`)
         })
     })
 }
